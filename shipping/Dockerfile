@@ -3,20 +3,17 @@
 #
 FROM debian:10 AS build
 
-# Update package lists
-RUN apt-get update 
-
-# Install required dependencies first
-RUN apt-get install -y --no-install-recommends ca-certificates-java
+# Fix certificate issues first
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates-java
 RUN update-ca-certificates -f
 
-# Install Java (OpenJDK 11) and Maven
+# Install Java and Maven
 RUN apt-get install -y openjdk-11-jre-headless maven
 
 # Clean up unnecessary files
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory for the app
+# Set working directory for the application
 WORKDIR /opt/shipping
 
 # Copy Maven config file and resolve dependencies
@@ -32,18 +29,18 @@ RUN mvn package
 #
 FROM openjdk:8-jdk
 
-# Expose port
+# Expose the application port
 EXPOSE 8080
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /opt/shipping
 
-# Environment variables
+# Set environment variables
 ENV CART_ENDPOINT=cart:8080
 ENV DB_HOST=mysql
 
-# Copy built JAR file from build stage
+# Copy the built JAR file from the build stage
 COPY --from=build /opt/shipping/target/shipping-1.0.jar shipping.jar
 
-# Run the application
+# Command to run the application
 CMD [ "java", "-Xmn256m", "-Xmx768m", "-jar", "shipping.jar" ]
